@@ -177,6 +177,32 @@ Link do Video de Apresentacao: <COLOQUE_O_LINK_AQUI>
 
 Video demonstrando a arquitetura, funcionalidades e uso da API.
 
+## Passo a passo (para funcionar)
+
+1) Crie o bucket S3 e as roles IAM (Glue e Lambda) com as permissoes da secao acima.
+2) Crie e ative um ambiente virtual Python:
+   - `python -m venv .venv`
+   - `source .venv/bin/activate`
+3) Instale o AWS CLI (necessario para `scripts/bootstrap_aws.sh`):
+   - https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+4) Instale dependencias do projeto:
+   - `pip install -r requirements.txt`
+   - Principais libs: `boto3` (AWS SDK), `pandas`, `yfinance`, `pyarrow`
+4) O projeto inclui `pyrightconfig.json` apontando para `.venv` (caso use Pyright).
+   Se precisar criar:
+   ```
+   {
+     "venvPath": ".",
+     "venv": ".venv"
+   }
+   ```
+6) Preencha o `.env` na raiz (ou exporte as variaveis) com `AWS_REGION`, `BUCKET`,
+   `GLUE_ROLE_ARN`, `LAMBDA_ROLE_ARN` e o `ATIVO` desejado.
+7) Execute `./scripts/bootstrap_aws.sh` para criar Glue Job, Crawler e Lambda.
+8) Rode `python scraper/scraper_upload.py` para baixar e enviar o parquet ao S3.
+9) Confira a execucao do Glue Job e a tabela no Glue Catalog (Crawler).
+10) Consulte os dados refinados no Athena.
+
 ## Como executar (AWS)
 
 Opcional: crie um arquivo `.env` na raiz (os scripts carregam automaticamente):
