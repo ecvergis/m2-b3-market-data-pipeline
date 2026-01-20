@@ -10,6 +10,7 @@ Projeto do Tech Challenge do módulo 2 como parte da Pós Tech em Machine Learni
 - [Permissoes AWS (IAM)](#permissoes-aws-iam)
 - [Checklist atendido](#checklist-atendido)
 - [Video de Apresentacao](#video-de-apresentacao)
+- [Passo a passo (para funcionar)](#passo-a-passo-para-funcionar)
 - [Como executar (AWS)](#como-executar-aws)
 - [Queries do Athena (exemplos)](#queries-do-athena-exemplos)
 - [Reset total (se precisar recomeçar)](#reset-total-se-precisar-recomecar)
