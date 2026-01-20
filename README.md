@@ -1,8 +1,24 @@
-# tc2-b3-market-data-pipeline
+# m2-b3-market-data-pipeline
+
+Projeto do Tech Challenge do módulo 2 como parte da Pós Tech em Machine Learning da FIAP.
 
 ## Visao geral
 Pipeline AWS para coletar dados diarios da B3, gravar em S3 (parquet particionado),
 disparar Lambda -> Glue Job -> Crawler e consultar via Athena.
+
+## Arquitetura (fluxo)
+
+```mermaid
+flowchart LR
+  Scraper[Scraper (scraper_upload.py)] -->|Parquet raw/| S3Raw[S3 raw/]
+  S3Raw -->|S3 ObjectCreated| Lambda[Lambda start-etl]
+  Lambda -->|StartJobRun| GlueJob[Glue Job (etl_job.py)]
+  GlueJob -->|Escreve Parquet refined/| S3Refined[S3 refined/]
+  GlueJob -->|StartCrawler| Crawler[Glue Crawler]
+  Crawler -->|Cataloga tabela| Catalog[Glue Data Catalog]
+  Athena[Athena] -->|SQL| Catalog
+  Athena -->|Lê dados| S3Refined
+```
 
 ## Estrutura do projeto
 
