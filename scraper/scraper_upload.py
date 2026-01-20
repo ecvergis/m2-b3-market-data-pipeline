@@ -1,3 +1,5 @@
+"""Baixa dados do Yahoo Finance e envia um Parquet para o S3."""
+
 from datetime import datetime
 import os
 
@@ -28,6 +30,7 @@ TICKER = os.getenv("TICKER") or (f"{ATIVO_ENV}.SA" if ATIVO_ENV else "VALE3.SA")
 ATIVO = ATIVO_ENV or TICKER.split(".")[0]
 
 def main():
+    """Executa o download, grava Parquet local e faz upload no S3."""
     # 1) Baixa dados diários
     df = yf.download(TICKER, period="30d", interval="1d")
     if df is None:

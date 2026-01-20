@@ -1,3 +1,5 @@
+"""ETL do Glue: lê raw do S3, transforma e grava em refined."""
+
 import os
 import sys
 from datetime import datetime
@@ -10,6 +12,7 @@ import pyarrow.parquet as pq  # pyright: ignore[reportMissingImports]
 
 # ===== CONFIG =====
 def _parse_job_args() -> dict[str, str]:
+    """Parseia argumentos no formato --chave=valor ou --chave valor."""
     args = {}
     i = 1
     while i < len(sys.argv):
@@ -37,6 +40,7 @@ DATA_PROCESSAMENTO = datetime.now().strftime("%Y-%m-%d")
 
 
 def _coalesce_duplicate_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Mescla colunas duplicadas, priorizando o primeiro valor não nulo."""
     if not df.columns.duplicated().any():
         return df
     seen: set[str] = set()
@@ -58,6 +62,7 @@ def _coalesce_duplicate_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def normalize_raw_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Normaliza o DataFrame bruto, removendo MultiIndex e duplicadas."""
     df = df.copy()
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = [c[0] for c in df.columns.to_list()]
@@ -65,9 +70,7 @@ def normalize_raw_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def read_raw_parquet() -> pd.DataFrame | None:
-    """
-    Lê todos os arquivos parquet do raw/ (exemplo simples).
-    """
+    """Lê todos os arquivos parquet do prefixo raw/ no S3."""
     s3 = boto3.client(
         "s3",
         region_name=REGION,
@@ -96,6 +99,7 @@ def read_raw_parquet() -> pd.DataFrame | None:
 
 
 def transform(df: pd.DataFrame) -> pd.DataFrame:
+    """Aplica renomes, médias e agregações sobre os dados brutos."""
     df = df.copy()
 
     # 1) Flatten de colunas MultiIndex vindas do yfinance
@@ -139,9 +143,7 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def write_refined(df: pd.DataFrame):
-    """
-    Escreve parquet no refined/ particionado por ativo e data.
-    """
+    """Escreve parquet no refined/ particionado por ativo e data."""
     ativo_value = (
         df["ativo"].iloc[0]
         if "ativo" in df.columns and not df["ativo"].empty
@@ -166,6 +168,7 @@ def write_refined(df: pd.DataFrame):
 
 
 def main():
+    """Executa o fluxo completo do ETL."""
     print("ETL START")
     df_raw = read_raw_parquet()
     if df_raw is None or df_raw.empty:

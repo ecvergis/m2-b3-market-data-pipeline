@@ -1,3 +1,5 @@
+"""Lambda que dispara Glue Job e Crawler a partir de eventos do S3."""
+
 import json
 import os
 import time
@@ -12,6 +14,7 @@ JOB_MAX_WAIT_SECONDS = int(os.getenv("JOB_MAX_WAIT_SECONDS", "120"))
 REGION = os.getenv("AWS_REGION", "us-east-1")
 
 def lambda_handler(event, context):
+    """Inicia o Glue Job e, se configurado, aguarda e dispara o Crawler."""
     print("EVENT:", json.dumps(event))
 
     glue = boto3.client("glue", region_name=REGION)
