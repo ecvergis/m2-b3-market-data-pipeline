@@ -1,0 +1,21 @@
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+.venv/
+venv/
+path/to/venv/
+
+# Build artifacts
+*.zip
+*.parquet
+
+# OS
+.DS_Store
