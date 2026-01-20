@@ -10,13 +10,13 @@ disparar Lambda -> Glue Job -> Crawler e consultar via Athena.
 
 ```mermaid
 flowchart LR
-  Scraper[Scraper (scraper_upload.py)] -->|Parquet raw/| S3Raw[S3 raw/]
-  S3Raw -->|S3 ObjectCreated| Lambda[Lambda start-etl]
-  Lambda -->|StartJobRun| GlueJob[Glue Job (etl_job.py)]
-  GlueJob -->|Escreve Parquet refined/| S3Refined[S3 refined/]
-  GlueJob -->|StartCrawler| Crawler[Glue Crawler]
-  Crawler -->|Cataloga tabela| Catalog[Glue Data Catalog]
-  Athena[Athena] -->|SQL| Catalog
+  Scraper["Scraper (scraper_upload.py)"] -->|Parquet raw/| S3Raw["S3 raw/"]
+  S3Raw -->|S3 ObjectCreated| Lambda["Lambda start-etl"]
+  Lambda -->|StartJobRun| GlueJob["Glue Job (etl_job.py)"]
+  GlueJob -->|Escreve Parquet refined/| S3Refined["S3 refined/"]
+  GlueJob -->|StartCrawler| Crawler["Glue Crawler"]
+  Crawler -->|Cataloga tabela| Catalog["Glue Data Catalog"]
+  Athena["Athena"] -->|SQL| Catalog
   Athena -->|Lê dados| S3Refined
 ```
 
