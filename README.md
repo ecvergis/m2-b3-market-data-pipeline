@@ -30,6 +30,125 @@ flowchart LR
 
 Obs: o unico ETL valido do Glue e o `etl/etl_job.py`.
 
+## Permissoes AWS (IAM)
+
+Resumo das permissoes minimas para tudo funcionar. Ajuste `<account>`, `<region>`,
+`<bucket>` e nomes conforme seu ambiente.
+
+### 1) Role do Glue (GLUE_ROLE_ARN)
+
+Anexe a policy gerenciada `service-role/AWSGlueServiceRole` e adicione acesso ao S3:
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": "arn:aws:s3:::<bucket>"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject"],
+      "Resource": [
+        "arn:aws:s3:::<bucket>/raw/*",
+        "arn:aws:s3:::<bucket>/refined/*",
+        "arn:aws:s3:::<bucket>/jobs/*"
+      ]
+    }
+  ]
+}
+```
+
+### 2) Role da Lambda (LAMBDA_ROLE_ARN)
+
+Anexe a policy gerenciada `AWSLambdaBasicExecutionRole` e permita iniciar Glue:
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "glue:StartJobRun",
+        "glue:GetJobRun",
+        "glue:GetJobRuns",
+        "glue:StartCrawler"
+      ],
+      "Resource": [
+        "arn:aws:glue:<region>:<account>:job/<glue_job_name>",
+        "arn:aws:glue:<region>:<account>:crawler/<crawler_name>"
+      ]
+    }
+  ]
+}
+```
+
+### 3) Usuario/role que roda `scripts/bootstrap_aws.sh`
+
+Precisa criar recursos e passar roles:
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:HeadBucket",
+        "s3:ListBucket",
+        "s3:PutBucketNotification",
+        "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::<bucket>",
+        "arn:aws:s3:::<bucket>/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "glue:CreateDatabase",
+        "glue:CreateJob",
+        "glue:UpdateJob",
+        "glue:CreateCrawler",
+        "glue:UpdateCrawler"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "lambda:CreateFunction",
+        "lambda:UpdateFunctionCode",
+        "lambda:UpdateFunctionConfiguration",
+        "lambda:GetFunction",
+        "lambda:AddPermission"
+      ],
+      "Resource": "arn:aws:lambda:<region>:<account>:function:start-etl"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": [
+        "arn:aws:iam::<account>:role/<glue-role>",
+        "arn:aws:iam::<account>:role/<lambda-role>"
+      ]
+    }
+  ]
+}
+```
+
+### 4) Para consultar via Athena (opcional)
+
+O usuario que roda queries no Athena precisa, no minimo:
+- `athena:StartQueryExecution`, `athena:GetQueryExecution`, `athena:GetQueryResults`
+- `glue:GetDatabase`, `glue:GetTables`, `glue:GetTable`
+- `s3:GetObject` no `refined/` e no bucket de resultados do Athena
+
 ## Checklist atendido
 
 - Scrap diario de dados da B3 (granularidade diaria)
