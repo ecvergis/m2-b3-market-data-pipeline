@@ -10,10 +10,12 @@ Projeto do Tech Challenge do módulo 2 como parte da Pós Tech em Machine Learni
 - [Permissoes AWS (IAM)](#permissoes-aws-iam)
 - [Checklist atendido](#checklist-atendido)
 - [Video de Apresentacao](#video-de-apresentacao)
+- [Pre-requisitos](#pre-requisitos)
 - [Passo a passo (para funcionar)](#passo-a-passo-para-funcionar)
 - [Como executar (AWS)](#como-executar-aws)
 - [Queries do Athena (exemplos)](#queries-do-athena-exemplos)
-- [Reset total (se precisar recomeçar)](#reset-total-se-precisar-recomecar)
+- [Troubleshooting](#troubleshooting)
+- [Reset total (se precisar recomecar)](#reset-total-se-precisar-recomecar)
 
 ## Visao geral
 Pipeline AWS para coletar dados diarios da B3, gravar em S3 (parquet particionado),
@@ -42,6 +44,16 @@ flowchart LR
 - `scripts/reset_aws.sh` — Limpa recursos na AWS (reset total, com confirmacao)
 
 Obs: o unico ETL valido do Glue e o `etl/etl_job.py`.
+
+### Detalhes do ETL (`etl/etl_job.py`)
+
+O ETL realiza tres transformacoes principais (A/B/C):
+
+- **A) Agregacao numerica**: Calcula media de `close_price` e soma total de `trade_volume` por ativo
+- **B) Renomeio de colunas**: Padroniza nomes (`Close` → `close_price`, `Volume` → `trade_volume`, `Date` → `date`)
+- **C) Calculo temporal**: Adiciona media movel de 7 dias (`mm_7d`) para cada ativo
+
+O resultado e gravado em `refined/ativo=<ativo>/data=<data>/result.parquet` com particionamento Hive.
 
 ## Permissoes AWS (IAM)
 
@@ -178,31 +190,48 @@ Link do Video de Apresentacao: <COLOQUE_O_LINK_AQUI>
 
 Video demonstrando a arquitetura, funcionalidades e uso da API.
 
+## Pre-requisitos
+
+- Python 3.10 ou superior
+- AWS CLI instalado e configurado ([guia de instalacao](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html))
+- Conta AWS com permissoes para criar recursos (S3, Glue, Lambda, IAM)
+- Roles IAM criadas (Glue e Lambda) com as permissoes da secao [Permissoes AWS (IAM)](#permissoes-aws-iam)
+
 ## Passo a passo (para funcionar)
 
 1) Crie o bucket S3 e as roles IAM (Glue e Lambda) com as permissoes da secao acima.
+
 2) Crie e ative um ambiente virtual Python:
-   - `python -m venv .venv`
-   - `source .venv/bin/activate`
-3) Instale o AWS CLI (necessario para `scripts/bootstrap_aws.sh`):
-   - https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-4) Instale dependencias do projeto:
-   - `pip install -r requirements.txt`
-   - Principais libs: `boto3` (AWS SDK), `pandas`, `yfinance`, `pyarrow`
-4) O projeto inclui `pyrightconfig.json` apontando para `.venv` (caso use Pyright).
-   Se precisar criar:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # No Windows: .venv\Scripts\activate
    ```
+
+3) Instale dependencias do projeto:
+   ```bash
+   pip install -r requirements.txt
+   ```
+   Principais libs: `boto3` (AWS SDK), `pandas`, `yfinance`, `pyarrow`
+
+4) Configure o `pyrightconfig.json` (opcional, para Pyright):
+   O projeto ja inclui `pyrightconfig.json` apontando para `.venv`. Se precisar criar:
+   ```json
    {
      "venvPath": ".",
      "venv": ".venv"
    }
    ```
-6) Preencha o `.env` na raiz (ou exporte as variaveis) com `AWS_REGION`, `BUCKET`,
+
+5) Preencha o `.env` na raiz (ou exporte as variaveis) com `AWS_REGION`, `BUCKET`,
    `GLUE_ROLE_ARN`, `LAMBDA_ROLE_ARN` e o `ATIVO` desejado.
-7) Execute `./scripts/bootstrap_aws.sh` para criar Glue Job, Crawler e Lambda.
-8) Rode `python scraper/scraper_upload.py` para baixar e enviar o parquet ao S3.
-9) Confira a execucao do Glue Job e a tabela no Glue Catalog (Crawler).
-10) Consulte os dados refinados no Athena.
+
+6) Execute `./scripts/bootstrap_aws.sh` para criar Glue Job, Crawler e Lambda.
+
+7) Rode `python scraper/scraper_upload.py` para baixar e enviar o parquet ao S3.
+
+8) Confira a execucao do Glue Job e a tabela no Glue Catalog (Crawler).
+
+9) Consulte os dados refinados no Athena.
 
 ## Como executar (AWS)
 
@@ -240,15 +269,69 @@ ATIVO=VALE3
 
 ## Queries do Athena (exemplos)
 
-```
+Apos o Crawler executar, a tabela estara disponivel no Glue Catalog. Exemplos:
+
+```sql
+-- Listar databases
 SHOW DATABASES;
+
+-- Listar tabelas no database default
 SHOW TABLES IN default;
+
+-- Descrever estrutura da tabela
 DESCRIBE <nome_da_tabela>;
+
+-- Consultar dados (substitua <nome_da_tabela> pelo nome real)
 SELECT * FROM <nome_da_tabela> LIMIT 50;
+
+-- Exemplo: consultar por ativo
+SELECT * FROM <nome_da_tabela> WHERE ativo = 'VALE3' ORDER BY date DESC;
+
+-- Exemplo: consultar media movel
+SELECT ativo, date, close_price, mm_7d 
+FROM <nome_da_tabela> 
+WHERE ativo = 'VALE3' 
+ORDER BY date DESC 
+LIMIT 30;
 ```
 
-## Reset total (se precisar recomeçar)
+**Nota**: O nome da tabela e gerado automaticamente pelo Crawler baseado no caminho S3. Verifique no console do Glue Data Catalog.
+
+## Troubleshooting
+
+### Lambda nao e disparada quando arquivo e enviado ao S3
+
+- Verifique se a notificacao do S3 esta configurada: `aws s3api get-bucket-notification-configuration --bucket <bucket>`
+- Confirme que a Lambda tem permissao para ser invocada pelo S3 (o `bootstrap_aws.sh` faz isso automaticamente)
+- Verifique os logs da Lambda no CloudWatch
+
+### Glue Job falha
+
+- Verifique os logs do Glue Job no CloudWatch Logs
+- Confirme que a role do Glue tem acesso ao S3 (raw/, refined/, jobs/)
+- Verifique se o script `etl_job.py` esta no S3: `aws s3 ls s3://<bucket>/jobs/`
+
+### Crawler nao cria tabela
+
+- Verifique se o Crawler executou com sucesso: `aws glue get-crawler --name <crawler-name>`
+- Confirme que existem dados em `refined/`: `aws s3 ls s3://<bucket>/refined/ --recursive`
+- Verifique os logs do Crawler no CloudWatch
+
+### Erro de permissoes IAM
+
+- Revise todas as policies das roles conforme a secao [Permissoes AWS (IAM)](#permissoes-aws-iam)
+- Confirme que o usuario que roda `bootstrap_aws.sh` tem `iam:PassRole` nas roles
+
+### Scraper nao encontra dados
+
+- Verifique se o ticker esta correto (ex: `VALE3.SA` para acoes brasileiras)
+- Confirme que o `ATIVO` ou `TICKER` esta definido no `.env`
+- Verifique a conexao com a internet e acesso ao Yahoo Finance
+
+## Reset total (se precisar recomecar)
 
 ```
 CONFIRM_AWS_RESET=YES ./scripts/reset_aws.sh
 ```
+
+**Atencao**: Este comando remove todos os recursos criados (bucket, Glue Job, Crawler, Lambda). Os dados no S3 serao perdidos.
