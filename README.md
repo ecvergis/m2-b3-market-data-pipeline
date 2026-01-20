@@ -159,7 +159,28 @@ O usuario que roda queries no Athena precisa, no minimo:
 - Catalogo e tabela no Glue Catalog via Crawler
 - Consulta via Athena usando o Glue Catalog
 
+## Video de Apresentacao
+
+Link do Video de Apresentacao: <COLOQUE_O_LINK_AQUI>
+
+Video demonstrando a arquitetura, funcionalidades e uso da API.
+
 ## Como executar (AWS)
+
+Opcional: crie um arquivo `.env` na raiz (os scripts carregam automaticamente):
+
+```
+AWS_REGION=us-east-1
+BUCKET=b3-datalake
+GLUE_JOB_NAME=b3-etl-job
+GLUE_DB_NAME=default
+CRAWLER_NAME=b3-refined-crawler
+GLUE_ROLE_ARN=arn:aws:iam::<conta>:role/<glue-role>
+LAMBDA_ROLE_ARN=arn:aws:iam::<conta>:role/<lambda-role>
+# Defina um ativo (ex: VALE3) ou um ticker completo (ex: VALE3.SA)
+ATIVO=VALE3
+# TICKER=VALE3.SA
+```
 
 1) Configure credenciais e regiao da AWS:
    - `aws configure` ou variaveis `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`
