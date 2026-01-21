@@ -188,7 +188,7 @@ O usuario que roda queries no Athena precisa, no minimo:
 
 [Link do Video de Apresentacao](https://youtu.be/hab50ssBfpQ)
 
-Video demonstrando a arquitetura, funcionalidades e uso da API.
+>Video demonstrando a arquitetura e o funcionamento da pipeline AWS._
 
 ## Pre-requisitos
 
