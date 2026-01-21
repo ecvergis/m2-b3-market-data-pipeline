@@ -186,7 +186,7 @@ O usuario que roda queries no Athena precisa, no minimo:
 
 ## Video de Apresentacao
 
-Link do Video de Apresentacao: (https://youtu.be/hab50ssBfpQ)
+[Link do Video de Apresentacao](https://youtu.be/hab50ssBfpQ)
 
 Video demonstrando a arquitetura, funcionalidades e uso da API.
 
